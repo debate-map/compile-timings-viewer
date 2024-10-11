@@ -16,6 +16,9 @@ export type BuildMetadata = {
 
   /** Build Unix timestamp */
   b: number;
+
+  /** Build time timestamp(formatted) */
+  bf: string;
 };
 
 /** Represents data for individual build units. **/
@@ -44,8 +47,10 @@ export const fetchTrackerData = async (): Promise<TrackerData> => {
  */
 export const fetchBuildMetadata = async (timestamp: string): Promise<BuildMetadata> => {
   try {
+
     const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_metadatas/metadata_${timestamp}.json`); // NOTE: absolute url is used for ease of development now
     const data = await resp.json();
+    data.bf = timestamp;
     return data;
   } catch (error) {
     console.error('Error fetching build metadata:', error);
@@ -59,7 +64,7 @@ export const fetchBuildMetadata = async (timestamp: string): Promise<BuildMetada
  */
 export const fetchBuildUnitsData = async (timestamp : string) : Promise<BuildUnitsData[]> => {
   try {
-    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_metadatas/units_${timestamp}.json`); // NOTE: absolute url is used for ease of development now
+    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_units/units_${timestamp}.json`); // NOTE: absolute url is used for ease of development now
     const data = await resp.json();
     return data;
   } catch (error) {
