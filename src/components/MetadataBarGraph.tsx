@@ -1,9 +1,10 @@
 import { forwardRef, useState } from "react";
 import useAppStore from "../store";
 import { ResponsiveBar } from "@nivo/bar";
-import { Dialog, Slide } from "@mui/material";
+import { Button, Dialog, FormControl, MenuItem, Select, Slide } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import BuildUnitsBarGraph from "./BuildUnitsBarGraph";
+import { ArrowBack, ArrowForward } from "@mui/icons-material";
 
 interface TickProps {
   x: number;
@@ -72,6 +73,7 @@ const DateTimeTick = ({ tick }: { tick: TickProps }) => (
 const MetadataBarGraph = () => {
    const buildMetadatas = Object.values(useAppStore((state) => state.buildMetadatas));
    const [dialogTimestamp, setDialogTimestamp] = useState<string | null>(null);
+   const [selectDisplay, setSelectDisplay] = useState<number>(1);
 
    return <>
       <ResponsiveBar
@@ -118,8 +120,49 @@ const MetadataBarGraph = () => {
         TransitionComponent={Transition}
       >
         {dialogTimestamp && (
-            <div style={{width: '100%', height: '100%' }}>
-                <BuildUnitsBarGraph timestamp={dialogTimestamp}/>
+            <div style={{width: '100%', height: '100%', position: 'relative'}}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '16px' }}>
+                    <div>
+                        <p>Total Build Time: <strong>{buildMetadatas.find(b => b.bf === dialogTimestamp)?.t}s</strong></p>
+                        <p>Rust Compiler Version: <strong>{buildMetadatas.find(b => b.bf === dialogTimestamp)?.r}</strong></p>
+                        <p>Number of Compilation Units: <strong>{buildMetadatas.find(b => b.bf === dialogTimestamp)?.u}</strong></p>
+                    </div>
+                    <div>
+                        <div style={{ display: 'flex', alignItems: 'center' }}>
+                            <select
+                                id="displaySelect"
+                                value={selectDisplay}
+                                onChange={(event) => setSelectDisplay(Number(event.target.value))}
+                                style={{
+                                    padding: '5px',
+                                    fontSize: '16px',
+                                    border: '1px solid #ccc',
+                                    borderRadius: '4px',
+                                    backgroundColor: '#fff'
+                                }}
+                            >
+                                <option value={1}>Compilation Units time</option>
+                                <option value={2}>Compilation Units time difference</option>
+                                <option value={3}>Raw Data</option>
+                            </select>
+                        </div>
+
+                    </div>
+                </div>
+                {
+                    selectDisplay === 1 ? (
+                        <BuildUnitsBarGraph timestamp={dialogTimestamp} />
+                    ) : selectDisplay === 2 ? (
+                        <div></div>
+                        //<BuildUnitsBarGraph timestamp={dialogTimestamp} diff={true} />
+                    ) : (
+                        <iframe
+                            src={`https://debate-map.github.io/compile-timings/timings/raw_html/cargo-timing-${dialogTimestamp}.html`}
+                            style={{width: '100vw', height: 'calc(100% - 100px)', border: 'none', overflowX: 'auto'}}
+                        ></iframe>
+                    )
+                }
+
             </div>
         )}
       </Dialog>
