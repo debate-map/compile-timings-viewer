@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { Bar, BarChart, CartesianGrid, Cell, Text, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
 import useAppStore from '../store';
 import { fetchBuildUnitsData } from '../dataProvider';
 import { Tooltip } from '@mui/material';
+import CenterCircularProgress from './CenterCircularProgress';
 
 const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
     const buildUnitsData = useAppStore((state) => state.buildUnitsData);
@@ -24,17 +25,18 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
     }, []);
 
     return (
-        buildUnitsData[timestamp] &&
+        buildUnitsData[timestamp] ?
             <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 0px 0px 24px' }}>
                     <div>
                         <p>Total Build Time: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.t}s</strong></p>
                         <p>Rust Compiler Version: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.r}</strong></p>
                         <p>Number of Compilation Units: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.u}</strong></p>
+                        <p>Compilation Date: <strong>{new Date(Number(buildMetadatas.find(b => b.bf === timestamp)?.b) * 1000).toLocaleString()}</strong></p>
                     </div>
 
                 </div>
-          <BarChart width={width} height={45 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 80, bottom: 5, }} >
+          <BarChart width={width} height={45 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 100, bottom: 5, }} >
             <CartesianGrid vertical={false} />
             <XAxis hide axisLine={false} type="number" />
             <YAxis yAxisId={0} orientation="left" dataKey={"u"} type="category" axisLine={false}
@@ -43,7 +45,7 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
                         return (
                             <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
                                 <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
-                                    {payload.value.length > 15 ? `${payload.value.substring(0, 10)}...` : payload.value}
+                                    {payload.value.length > 18 ? `${payload.value.substring(0, 15)}...` : payload.value}
                                 </text>
                             </Tooltip>
                         );
@@ -65,7 +67,7 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
                 })}
             </Bar>
           </BarChart>
-          </>
+          </> : <CenterCircularProgress/>
 
     );
 }

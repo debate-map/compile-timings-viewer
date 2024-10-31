@@ -5,6 +5,9 @@ import { Button, Dialog, FormControl, IconButton, MenuItem, Select, Slide } from
 import { TransitionProps } from "@mui/material/transitions";
 import BuildUnitsBarGraph from "./BuildUnitsBarGraph";
 import { ArrowBack, ArrowForward, Close } from "@mui/icons-material";
+import RawData from "./RawData";
+import CenterCircularProgress from "./CenterCircularProgress";
+import DiffBuildUnitsBarGraph from "./DiffBuildUnitsBarGraph";
 
 interface TickProps {
   x: number;
@@ -75,7 +78,9 @@ const MetadataBarGraph = () => {
    const [dialogTimestamp, setDialogTimestamp] = useState<string | null>(null);
    const [selectDisplay, setSelectDisplay] = useState<number>(1);
 
-   return <>
+   return (
+        buildMetadatas.length === 0 ? <CenterCircularProgress /> :
+      <>
       <ResponsiveBar
           theme={buildMetadataBarTheme}
           data={buildMetadatas}
@@ -116,7 +121,10 @@ const MetadataBarGraph = () => {
       <Dialog
         fullScreen
         open={dialogTimestamp !== null}
-        onClose={() => setDialogTimestamp(null)}
+        onClose={() => {
+            setDialogTimestamp(null)
+            setSelectDisplay(1)
+        }}
         TransitionComponent={Transition}
       >
         {dialogTimestamp && (
@@ -163,19 +171,20 @@ const MetadataBarGraph = () => {
                 {selectDisplay === 1 ? (
                         <BuildUnitsBarGraph timestamp={dialogTimestamp} />
                     ) : selectDisplay === 2 ? (
-                        <div></div>
+                        <DiffBuildUnitsBarGraph
+                            basisTimestamp={dialogTimestamp}
+                            competitorTimestamp={buildMetadatas?.[buildMetadatas.findIndex(m => m.bf === dialogTimestamp) - 1]?.bf || null}
+                        />
                     ) : (
-                        <iframe
-                            src={`https://debate-map.github.io/compile-timings/timings/raw_html/cargo-timing-${dialogTimestamp}.html`}
-                            style={{width: '100vw', height: 'calc(100% - 100px)', border: 'none', overflowX: 'auto'}}
-                        ></iframe>
+                        <RawData timestamp={dialogTimestamp} />
                     )
                 }
                 </div>
             </div>
         )}
       </Dialog>
-  </>
+    </>
+   );
 }
 
 export default MetadataBarGraph;
