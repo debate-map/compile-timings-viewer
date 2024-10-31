@@ -1,12 +1,15 @@
-import {useEffect} from 'react';
-import { Bar, BarChart, CartesianGrid, Cell,  Text, XAxis, YAxis } from 'recharts';
+import { useEffect, useState } from 'react';
+import { Bar, BarChart, CartesianGrid, Cell, Text, XAxis, YAxis } from 'recharts';
 import useAppStore from '../store';
 import { fetchBuildUnitsData } from '../dataProvider';
 import { Tooltip } from '@mui/material';
 
 const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
     const buildUnitsData = useAppStore((state) => state.buildUnitsData);
+    const buildMetadatas = Object.values(useAppStore((state) => state.buildMetadatas));
+
     const addBuildUnitsData = useAppStore((state) => state.addBuildUnitsData);
+    const [width, setWidth] = useState(window.innerWidth);
 
     useEffect(() => {
         if (buildUnitsData[timestamp] === undefined) {
@@ -14,11 +17,24 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
                 addBuildUnitsData(timestamp, buildUnitsData);
             });
         }
+
+        const handleResize = () => setWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
     }, []);
 
     return (
         buildUnitsData[timestamp] &&
-          <BarChart width={1920} height={45 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 100, left: 80, bottom: 5, }} >
+            <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 0px 0px 24px' }}>
+                    <div>
+                        <p>Total Build Time: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.t}s</strong></p>
+                        <p>Rust Compiler Version: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.r}</strong></p>
+                        <p>Number of Compilation Units: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.u}</strong></p>
+                    </div>
+
+                </div>
+          <BarChart width={width} height={45 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 80, bottom: 5, }} >
             <CartesianGrid vertical={false} />
             <XAxis hide axisLine={false} type="number" />
             <YAxis yAxisId={0} orientation="left" dataKey={"u"} type="category" axisLine={false}
@@ -49,6 +65,7 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
                 })}
             </Bar>
           </BarChart>
+          </>
 
     );
 }
