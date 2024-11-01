@@ -1,10 +1,10 @@
 import { forwardRef, useState } from "react";
 import useAppStore from "../store";
 import { ResponsiveBar } from "@nivo/bar";
-import { Button, Dialog, FormControl, IconButton, MenuItem, Select, Slide } from "@mui/material";
+import { Dialog, IconButton, Slide } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import BuildUnitsBarGraph from "./BuildUnitsBarGraph";
-import { ArrowBack, ArrowForward, Close } from "@mui/icons-material";
+import { Close } from "@mui/icons-material";
 import RawData from "./RawData";
 import CenterCircularProgress from "./CenterCircularProgress";
 import DiffBuildUnitsBarGraph from "./DiffBuildUnitsBarGraph";
@@ -74,16 +74,19 @@ const DateTimeTick = ({ tick }: { tick: TickProps }) => (
 )
 
 const MetadataBarGraph = () => {
-   const buildMetadatas = Object.values(useAppStore((state) => state.buildMetadatas));
    const [dialogTimestamp, setDialogTimestamp] = useState<string | null>(null);
    const [selectDisplay, setSelectDisplay] = useState<number>(1);
+   const buildMetadatas = useAppStore((state) => state.buildMetadatas);
+   const buildMds = Object.entries(buildMetadatas).map(([key, metadata]) => {
+     return { ...metadata, bf:  key };
+   });
 
    return (
-        buildMetadatas.length === 0 ? <CenterCircularProgress /> :
+        buildMds.length === 0 ? <CenterCircularProgress /> :
       <>
       <ResponsiveBar
           theme={buildMetadataBarTheme}
-          data={buildMetadatas}
+          data={buildMds}
           animate = {false}
           keys={[ 't' ]}
           indexBy="b"
@@ -171,12 +174,19 @@ const MetadataBarGraph = () => {
                 {selectDisplay === 1 ? (
                         <BuildUnitsBarGraph timestamp={dialogTimestamp} />
                     ) : selectDisplay === 2 ? (
+                        buildMds.length < 2 ?
+                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '24px', fontWeight: 'bold' }}>
+                            No any other builds to make comparison
+                        </div> :
                         <DiffBuildUnitsBarGraph
                             basisTimestamp={dialogTimestamp}
-                            competitorTimestamp={buildMetadatas?.[buildMetadatas.findIndex(m => m.bf === dialogTimestamp) - 1]?.bf || null}
+                            competitorTimestamp={
+                                    buildMds[buildMds.findIndex(m => m.bf === dialogTimestamp) - 1]?.bf ||
+                                    buildMds[buildMds.findIndex(m => m.bf === dialogTimestamp) + 1]?.bf
+                            }
                         />
                     ) : (
-                        <RawData timestamp={dialogTimestamp} />
+                        <RawData timestamp={dialogTimestamp} hash={buildMds[buildMds.findIndex(m=> m.bf === dialogTimestamp)].h}/>
                     )
                 }
                 </div>

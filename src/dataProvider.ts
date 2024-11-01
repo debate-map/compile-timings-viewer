@@ -1,7 +1,13 @@
+// NOTE: absolute url is used for ease of development now
+
 /**
  * An array of timestamps in the format "YYYYMMDDTHHMMSSZ".
  */
 export type TrackerData = string[];
+
+export type BuildMetadatas = {
+    [timestamp: string]: BuildMetadata;
+}
 
 /** Represents metadata for a build process. **/
 export type BuildMetadata = {
@@ -17,8 +23,12 @@ export type BuildMetadata = {
   /** Build Unix timestamp */
   b: number;
 
+  /** Corresponding Commit Hash */
+  h : string
+
   /** Build time timestamp(formatted) */
   bf: string;
+
 };
 
 /** Represents data for individual build units. **/
@@ -32,7 +42,7 @@ export type BuildUnitsData = {
 
 export const fetchTrackerData = async (): Promise<TrackerData> => {
   try {
-      const resp = await fetch('https://debate-map.github.io/compile-timings/timings/tracker.json'); // NOTE: absolute url is used for ease of development now
+      const resp = await fetch('https://debate-map.github.io/compile-timings/timings/tracker.json');
       const data = await resp.json();
       return data;
     } catch (error) {
@@ -45,12 +55,10 @@ export const fetchTrackerData = async (): Promise<TrackerData> => {
  * Fetches build metadata for a specific timestamp.
  * @param {string} timestamp - The timestamp in the format "YYYYMMDDTHHMMSSZ".
  */
-export const fetchBuildMetadata = async (timestamp: string): Promise<BuildMetadata> => {
+export const fetchBuildMetadatas = async (): Promise<BuildMetadatas> => {
   try {
-
-    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_metadatas/metadata_${timestamp}.json`); // NOTE: absolute url is used for ease of development now
+    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_metadatas.json`);
     const data = await resp.json();
-    data.bf = timestamp;
     return data;
   } catch (error) {
     console.error('Error fetching build metadata:', error);
@@ -64,7 +72,7 @@ export const fetchBuildMetadata = async (timestamp: string): Promise<BuildMetada
  */
 export const fetchBuildUnitsData = async (timestamp : string) : Promise<BuildUnitsData[]> => {
   try {
-    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_units/units_${timestamp}.json`); // NOTE: absolute url is used for ease of development now
+    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_units/units_${timestamp}.json`);
     const data = await resp.json();
     return data;
   } catch (error) {

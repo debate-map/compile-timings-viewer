@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
-import useAppStore from '../store';
+import useAppStore, { DMAP_COMMITS_BASE } from '../store';
 import { fetchBuildUnitsData } from '../dataProvider';
 import { Tooltip } from '@mui/material';
 import CenterCircularProgress from './CenterCircularProgress';
+import moment from 'moment'
 
 const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
     const buildUnitsData = useAppStore((state) => state.buildUnitsData);
-    const buildMetadatas = Object.values(useAppStore((state) => state.buildMetadatas));
-
+    const buildMetadatas = useAppStore((state) => state.buildMetadatas);
     const addBuildUnitsData = useAppStore((state) => state.addBuildUnitsData);
+
     const [width, setWidth] = useState(window.innerWidth);
 
     useEffect(() => {
@@ -29,10 +30,11 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
             <>
                 <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 0px 0px 24px' }}>
                     <div>
-                        <p>Total Build Time: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.t}s</strong></p>
-                        <p>Rust Compiler Version: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.r}</strong></p>
-                        <p>Number of Compilation Units: <strong>{buildMetadatas.find(b => b.bf === timestamp)?.u}</strong></p>
-                        <p>Compilation Date: <strong>{new Date(Number(buildMetadatas.find(b => b.bf === timestamp)?.b) * 1000).toLocaleString()}</strong></p>
+                        <p>Total Build Time: <strong>{buildMetadatas[timestamp].t}s</strong></p>
+                        <p>Rust Compiler Version: <strong>{buildMetadatas[timestamp].r}</strong></p>
+                        <p>Number of Compilation Units: <strong>{buildMetadatas[timestamp].u}</strong></p>
+                        <p>Compilation Date: <strong>{new Date(Number(buildMetadatas[timestamp].b) * 1000).toLocaleString("sv")} ({moment(Number(buildMetadatas[timestamp].b) * 1000).fromNow()})</strong></p>
+                        <p>Commit Hash: <a href={`${DMAP_COMMITS_BASE}/${buildMetadatas[timestamp].h}`} target="_blank" style={{ cursor: 'pointer' }}>{buildMetadatas[timestamp].h}</a></p>
                     </div>
 
                 </div>

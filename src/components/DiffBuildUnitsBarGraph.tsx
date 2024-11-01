@@ -14,14 +14,14 @@ type DifferenceUnitData = {
     inCompetitor: string
 }
 
-const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTimestamp : string, competitorTimestamp: string | null}) => {
+const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTimestamp : string, competitorTimestamp: string}) => {
     const buildUnitsData = useAppStore((state) => state.buildUnitsData);
     const trackerData = useAppStore((state) => state.trackerData);
     const buildMetadatas = Object.values(useAppStore((state) => state.buildMetadatas));
     const addBuildUnitsData = useAppStore((state) => state.addBuildUnitsData);
 
     const [width, setWidth] = useState(window.innerWidth);
-    const [selectCompetitor, setSelectCompetitor] = useState<string | null>(competitorTimestamp);
+    const [selectCompetitor, setSelectCompetitor] = useState<string>(competitorTimestamp);
     const [differenceData, setDifferenceData] = useState<DifferenceUnitData[]>();
 
     useEffect(() => {
@@ -78,10 +78,8 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                     competitorUnitsMap = new Map(newBuildUnitsData.map(item => [item.u, item.t]));
                 }
             }
-            console.log(competitorUnitsMap)
 
             const compiledUnitsMap = new Map<string, { difference: number, inCompetitor: string }>();
-
             baseUnitsMap.forEach((value, key) => {
                 const competitorValue = competitorUnitsMap.get(key);
                 if (competitorValue){
@@ -111,7 +109,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
         return () => window.removeEventListener('resize', handleResize);
     }, [selectCompetitor]);
 
-    return (buildUnitsData[basisTimestamp] && selectCompetitor && buildUnitsData[selectCompetitor])  ?
+    return (buildUnitsData[basisTimestamp] && buildUnitsData[selectCompetitor])  ?
             <>
             <div style={{ display: 'grid', gridTemplateColumns: '50% 50%', padding: '0px 0px 0px 24px' }}>
                 <div>
