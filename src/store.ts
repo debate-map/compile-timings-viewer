@@ -1,12 +1,15 @@
 import { create } from 'zustand'
-import { BuildMetadata, BuildUnitsData, TrackerData } from './dataProvider'
+import { BuildMetadata, BuildMetadatas, BuildUnitsData, TrackerData } from './dataProvider'
+
+export const DMAP_COMMITS_BASE = "https://github.com/debate-map/app/commit"
+export const RAW_HTML_BASE = "https://debate-map.github.io/compile-timings/timings/raw_html"
 
 interface AppState{
     trackerData : TrackerData,
     setTrackerData : (td : TrackerData) => void
 
     buildMetadatas : {[key: string]: BuildMetadata},
-    addBuildMetadata : (bm : BuildMetadata[]) => void
+    setBuildMetadatas : (bm : BuildMetadatas) => void
 
     buildUnitsData : {[key: string]: BuildUnitsData[]},
     addBuildUnitsData : (timestamp : string, build_units : BuildUnitsData[]) => void
@@ -17,11 +20,8 @@ const useAppStore = create<AppState>()((set) => ({
     setTrackerData: (td: TrackerData) => set(() => ({ trackerData: td })),
 
     buildMetadatas: {},
-    addBuildMetadata: (bm: BuildMetadata[]) => set((state) => ({
-        buildMetadatas: {
-            ...state.buildMetadatas,
-            ...Object.fromEntries(bm.map(metadata => [metadata.bf, metadata]))
-        }
+    setBuildMetadatas: (bm: BuildMetadatas) => set(() => ({
+        buildMetadatas: bm
     })),
 
     buildUnitsData: {},

@@ -1,5 +1,5 @@
 import { useEffect, useState} from 'react';
-import { fetchBuildMetadata, fetchTrackerData } from './dataProvider';
+import { fetchBuildMetadatas, fetchTrackerData } from './dataProvider';
 import useAppStore from './store';
 import MetadataBarGraph from './components/MetadataBarGraph';
 import { Alert, Snackbar  } from '@mui/material';
@@ -8,26 +8,23 @@ const TRY_AGAIN_INTERVAL = 5000;
 
 const App = () => {
     const setTrackerData = useAppStore((state) => state.setTrackerData);
+    const setBuildMetadatas = useAppStore((state) => state.setBuildMetadatas);
+
     const trackerData = useAppStore((state) => state.trackerData);
-    const addBuildMetadata = useAppStore((state) => state.addBuildMetadata);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
 
     useEffect(() => {
-        const fetchData = () => {
-            fetchTrackerData().then((newTrackerData) => {
-                setTrackerData(newTrackerData);
-                Promise.all(newTrackerData.map(t => fetchBuildMetadata(t)))
-                    .then(metadataArray => {
-                        addBuildMetadata(metadataArray);
-                        setSnackbarOpen(false);
-                    });
-            }).catch(() => {
+        const fetchData = async () => {
+            try {
+                setTrackerData(await fetchTrackerData());
+                setBuildMetadatas(await fetchBuildMetadatas());
+                setSnackbarOpen(false);
+            } catch (error) {
                 setSnackbarOpen(true);
-                setTimeout(fetchData, TRY_AGAIN_INTERVAL);
-            });
+            }
         };
         fetchData();
-    }, [addBuildMetadata, setTrackerData]);
+    }, [setBuildMetadatas, setTrackerData]);
 
     const handleSnackbarClose = () => {
         setSnackbarOpen(false);
