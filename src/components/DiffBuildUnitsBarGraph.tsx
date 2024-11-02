@@ -118,7 +118,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                                 .reverse()
                                 .map((v) => (
                                     <option key={v} value={v}>
-                                        {new Date(Number(buildMetadatas[v].b) * 1000).toLocaleString("sv")} ({moment(buildMetadatas[v].b * 1000).fromNow()})
+                                        {new Date(Number(buildMetadatas[v].b) * 1000).toLocaleString("sv")} ({moment(buildMetadatas[v].b * 1000).fromNow()}) ({buildMetadatas[v].h})
                                     </option>
                                 ))
                             }
