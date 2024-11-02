@@ -4,13 +4,9 @@ import useAppStore from './store';
 import MetadataBarGraph from './components/MetadataBarGraph';
 import { Alert, Snackbar  } from '@mui/material';
 
-const TRY_AGAIN_INTERVAL = 5000;
-
 const App = () => {
     const setTrackerData = useAppStore((state) => state.setTrackerData);
     const setBuildMetadatas = useAppStore((state) => state.setBuildMetadatas);
-
-    const trackerData = useAppStore((state) => state.trackerData);
     const [snackbarOpen, setSnackbarOpen] = useState(false);
 
     useEffect(() => {
@@ -24,7 +20,7 @@ const App = () => {
             }
         };
         fetchData();
-    }, [setBuildMetadatas, setTrackerData]);
+    }, []);
 
     const handleSnackbarClose = () => {
         setSnackbarOpen(false);
@@ -37,7 +33,7 @@ const App = () => {
         </div>
         <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={handleSnackbarClose}>
             <Alert severity="error" onClose={handleSnackbarClose}>
-               {`Error fetching data`}
+               {`Error fetching data, try to refresh the page.`}
             </Alert>
         </Snackbar>
         </>
