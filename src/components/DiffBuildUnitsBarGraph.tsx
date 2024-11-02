@@ -16,6 +16,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
     const { buildUnitsData, trackerData, buildMetadatas, addBuildUnitsData } = useAppStore();
     const [width, setWidth] = useState(window.innerWidth);
     const [selectCompetitor, setSelectCompetitor] = useState<string>(competitorTimestamp);
+    const [sortSelect, setSortSelect] = useState<string>("negative");
     const [differenceData, setDifferenceData] = useState<DifferenceUnitData[]>();
 
     const processUnitsData = (data: BuildUnitsData[]): Map<string, number> => {
@@ -36,18 +37,21 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
 
     useEffect(() => {
         const fetchUnits = async () => {
-            if (!buildUnitsData[basisTimestamp]) {
-                const data = await fetchBuildUnitsData(basisTimestamp);
-                addBuildUnitsData(basisTimestamp, data);
+            let bData = buildUnitsData[basisTimestamp] || [];
+            let cData = buildUnitsData[selectCompetitor] || [];
+
+            if (bData.length === 0) {
+                bData = await fetchBuildUnitsData(basisTimestamp);
+                addBuildUnitsData(basisTimestamp, bData);
             }
 
-            if (!buildUnitsData[selectCompetitor]) {
-                const data = await fetchBuildUnitsData(selectCompetitor);
-                addBuildUnitsData(selectCompetitor, data);
+            if (cData.length === 0) {
+                cData = await fetchBuildUnitsData(selectCompetitor);
+                addBuildUnitsData(selectCompetitor, cData);
             }
 
-            const baseUnitsMap = processUnitsData(buildUnitsData[basisTimestamp] || []);
-            const competitorUnitsMap = processUnitsData(buildUnitsData[selectCompetitor] || []);
+            const baseUnitsMap = processUnitsData(bData);
+            const competitorUnitsMap = processUnitsData(cData);
 
             const compiledUnitsMap = new Map<string, { difference: number, inCompetitor: string }>();
             baseUnitsMap.forEach((value, key) => {
@@ -67,11 +71,16 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
             setDifferenceData(newDifferenceData);
         };
 
-        fetchUnits();
+        try{
+            fetchUnits();
+        }catch(e){
+            console.error(e);
+        }
+
         const handleResize = () => setWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [selectCompetitor]);
+    }, [selectCompetitor, differenceData]);
 
     const renderMetadata = (timestamp: string) => (
         <>
@@ -83,7 +92,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
         </>
     );
 
-    if (!buildUnitsData[basisTimestamp] || !buildUnitsData[selectCompetitor]) {
+    if (!buildUnitsData[basisTimestamp] || !buildUnitsData[selectCompetitor] || !differenceData) {
         return <CenterCircularProgress />;
     }
 
@@ -94,12 +103,28 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                     <h2>Base</h2>
                     {renderMetadata(basisTimestamp)}
                 </div>
-                <div style={{display:"flex", justifyContent: "space-between"}}>
+                <div style={{display: "flex",flexDirection:"column" }}>
                     <div>
                         <h2>Competitor</h2>
                         {renderMetadata(selectCompetitor)}
                     </div>
                     <div style={{alignSelf : "end", paddingBottom : "16px", paddingRight : "18px"}}>
+                        <select
+                            id="sortSelect"
+                            value={sortSelect}
+                            onChange={(event) => setSortSelect(event.target.value)}
+                            style={{
+                                padding: '5px',
+                                fontSize: '16px',
+                                border: '1px solid #ccc',
+                                borderRadius: '4px',
+                                backgroundColor: '#fff',
+                                marginRight: '8px'
+                            }}
+                        >
+                            <option value="negative">Negative delta first</option>
+                            <option value="positive">Positive delta first</option>
+                        </select>
                         <select
                             id="displaySelect"
                             value={selectCompetitor}
@@ -129,7 +154,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
             <BarChart
               width={width}
               height={56 * buildUnitsData[basisTimestamp].length}
-              data={differenceData?.slice().reverse()}
+              data={sortSelect === "negative" ? differenceData : differenceData.slice().reverse()}
               layout={"vertical"}
               margin={{ right: 20, left: 160, bottom: 5 }}>
               <CartesianGrid vertical={false} />
@@ -176,7 +201,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                   }}
               />
               <Bar isAnimationActive={false} dataKey={"difference"} minPointSize={1} barSize={32}>
-                  {differenceData?.slice().reverse().map((d, v) => (
+                  {(sortSelect === "negative" ? differenceData : differenceData.slice().reverse()).map((d, v) => (
                     <Cell key={`cell-${v}`} fill={d.difference > 0 ? "#82ca9d" : "#ff7f7f"} />
                   ))}
               </Bar>
