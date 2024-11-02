@@ -40,8 +40,9 @@ export type BuildUnitsData = {
 };
 
 export const fetchTrackerData = async (): Promise<TrackerData> => {
+  const urlParams = new URLSearchParams(window.location.search);
   try {
-      const resp = await fetch(`${TIMINGS_FETCH_BASE}/tracker.json`);
+      const resp = await fetch(`${TIMINGS_FETCH_BASE}/tracker.json?${urlParams.toString()}`);
       const data = await resp.json();
       return data;
     } catch (error) {
@@ -54,8 +55,9 @@ export const fetchTrackerData = async (): Promise<TrackerData> => {
  * Fetches build metadata for a specific timestamp.
  */
 export const fetchBuildMetadatas = async (): Promise<BuildMetadatas> => {
+  const urlParams = new URLSearchParams(window.location.search);
   try {
-    const resp = await fetch(`${TIMINGS_FETCH_BASE}/build_metadatas.json`);
+    const resp = await fetch(`${TIMINGS_FETCH_BASE}/build_metadatas.json?${urlParams.toString()}`);
     const data = await resp.json();
     return data;
   } catch (error) {
@@ -69,8 +71,9 @@ export const fetchBuildMetadatas = async (): Promise<BuildMetadatas> => {
  * @param {string} timestamp - The timestamp in the format "YYYYMMDDTHHMMSSZ".
  */
 export const fetchBuildUnitsData = async (timestamp : string) : Promise<BuildUnitsData[]> => {
+  const urlParams = new URLSearchParams(window.location.search);
   try {
-    const resp = await fetch(`${TIMINGS_FETCH_BASE}/build_units/units_${timestamp}.json`);
+    const resp = await fetch(`${TIMINGS_FETCH_BASE}/build_units/units_${timestamp}.json?${urlParams.toString()}`);
     const data = await resp.json();
     return data;
   } catch (error) {

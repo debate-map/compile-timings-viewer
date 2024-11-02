@@ -1,7 +1,7 @@
 import { forwardRef, useState } from "react";
 import useAppStore from "../store";
 import { ResponsiveBar } from "@nivo/bar";
-import { Dialog, IconButton, Slide } from "@mui/material";
+import { Button, Dialog, IconButton, Slide } from "@mui/material";
 import { TransitionProps } from "@mui/material/transitions";
 import BuildUnitsBarGraph from "./BuildUnitsBarGraph";
 import { Close } from "@mui/icons-material";
@@ -84,13 +84,25 @@ const MetadataBarGraph = () => {
    return (
         buildMds.length === 0 ? <CenterCircularProgress /> :
       <>
+      <div style={{ position: 'absolute', top: '24px', right: '24px', zIndex: 1 }}> <Button
+          variant="contained"
+          color="error"
+          style={{ textTransform: 'none', height: '36px', fontSize: '14px'}}
+          onClick={() => {
+            const timestamp = new Date().getTime();
+            window.location.href = `${window.location.pathname}?t=${timestamp}`;
+          }}
+          title="Refresh the cache with milli second nonce params in url to bypass cache"
+        >Cache Refresh</Button>
+      </div>
+
       <ResponsiveBar
           theme={buildMetadataBarTheme}
           data={buildMds}
           animate = {false}
           keys={[ 't' ]}
           indexBy="b"
-          margin={{ top: 50, right: 25, bottom: 100, left: 100 }}
+          margin={{ top: 50, right: 25, bottom:100 , left: 100 }}
           padding={0.2}
           valueScale={{ type: 'linear'}}
           indexScale={{ type: 'band', round: true }}
@@ -121,6 +133,7 @@ const MetadataBarGraph = () => {
           role="application"
           ariaLabel="Compile Time Graph"
       />
+
       <Dialog
         fullScreen
         open={dialogTimestamp !== null}
