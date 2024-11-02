@@ -38,7 +38,7 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
                     </div>
 
                 </div>
-          <BarChart width={width} height={45 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 100, bottom: 5, }} >
+          <BarChart width={width} height={56 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 160, bottom: 5, }} >
             <CartesianGrid vertical={false} />
             <XAxis hide axisLine={false} type="number" />
             <YAxis yAxisId={0} orientation="left" dataKey={"u"} type="category" axisLine={false}
@@ -47,7 +47,16 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
                         return (
                             <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
                                 <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
-                                    {payload.value.length > 18 ? `${payload.value.substring(0, 15)}...` : payload.value}
+                                    {payload.value.length > 25 ? (
+                                        <>
+                                            <tspan x={x} dy="-0.6">
+                                                {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
+                                            </tspan>
+                                            <tspan x={x} dy="1.2em">
+                                                {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
+                                            </tspan>
+                                        </>
+                                    ) : payload.value}
                                 </text>
                             </Tooltip>
                         );

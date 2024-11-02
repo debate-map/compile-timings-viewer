@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Bar, BarChart, Cell, XAxis, YAxis } from 'recharts';
+import { Bar, BarChart, CartesianGrid, Cell, XAxis, YAxis } from 'recharts';
 import useAppStore, { DMAP_COMMITS_BASE } from '../store';
 import { BuildUnitsData, fetchBuildUnitsData } from '../dataProvider';
 import { Tooltip } from '@mui/material';
@@ -115,8 +115,11 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                         >
                             {trackerData
                                 .filter(v => v !== basisTimestamp)
+                                .reverse()
                                 .map((v) => (
-                                    <option key={v} value={v}>{v}</option>
+                                    <option key={v} value={v}>
+                                        {new Date(Number(buildMetadatas[v].b) * 1000).toLocaleString("sv")} ({moment(buildMetadatas[v].b * 1000).fromNow()})
+                                    </option>
                                 ))
                             }
                         </select>
@@ -125,10 +128,11 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
             </div>
             <BarChart
               width={width}
-              height={45 * buildUnitsData[basisTimestamp].length}
+              height={56 * buildUnitsData[basisTimestamp].length}
               data={differenceData?.slice().reverse()}
               layout={"vertical"}
-              margin={{ right: 20, left: 100, bottom: 5 }}>
+              margin={{ right: 20, left: 160, bottom: 5 }}>
+              <CartesianGrid vertical={false} />
               <XAxis hide axisLine={false} type="number" />
               <YAxis yAxisId={0} orientation="left" dataKey={"unit"} type="category" axisLine={false}
                       tick={(props) => {
@@ -136,7 +140,16 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                           return (
                               <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
                                   <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
-                                      {payload.value.length > 18 ? `${payload.value.substring(0, 15)}...` : payload.value}
+                                      {payload.value.length > 25 ? (
+                                          <>
+                                              <tspan x={x} dy="-0.6">
+                                                  {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
+                                              </tspan>
+                                              <tspan x={x} dy="1.2em">
+                                                  {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
+                                              </tspan>
+                                          </>
+                                      ) : payload.value}
                                   </text>
                               </Tooltip>
                           );
