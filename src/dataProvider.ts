@@ -1,10 +1,9 @@
-// NOTE: absolute url is used for ease of development now
+import { TIMINGS_FETCH_BASE } from "./store";
 
 /**
  * An array of timestamps in the format "YYYYMMDDTHHMMSSZ".
  */
 export type TrackerData = string[];
-
 export type BuildMetadatas = {
     [timestamp: string]: BuildMetadata;
 }
@@ -42,7 +41,7 @@ export type BuildUnitsData = {
 
 export const fetchTrackerData = async (): Promise<TrackerData> => {
   try {
-      const resp = await fetch('https://debate-map.github.io/compile-timings/timings/tracker.json');
+      const resp = await fetch(`${TIMINGS_FETCH_BASE}/tracker.json`);
       const data = await resp.json();
       return data;
     } catch (error) {
@@ -53,11 +52,10 @@ export const fetchTrackerData = async (): Promise<TrackerData> => {
 
 /**
  * Fetches build metadata for a specific timestamp.
- * @param {string} timestamp - The timestamp in the format "YYYYMMDDTHHMMSSZ".
  */
 export const fetchBuildMetadatas = async (): Promise<BuildMetadatas> => {
   try {
-    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_metadatas.json`);
+    const resp = await fetch(`${TIMINGS_FETCH_BASE}/build_metadatas.json`);
     const data = await resp.json();
     return data;
   } catch (error) {
@@ -72,7 +70,7 @@ export const fetchBuildMetadatas = async (): Promise<BuildMetadatas> => {
  */
 export const fetchBuildUnitsData = async (timestamp : string) : Promise<BuildUnitsData[]> => {
   try {
-    const resp = await fetch(`https://debate-map.github.io/compile-timings/timings/build_units/units_${timestamp}.json`);
+    const resp = await fetch(`${TIMINGS_FETCH_BASE}/build_units/units_${timestamp}.json`);
     const data = await resp.json();
     return data;
   } catch (error) {
