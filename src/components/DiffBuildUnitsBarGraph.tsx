@@ -1,137 +1,109 @@
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, Cell, XAxis, YAxis } from 'recharts';
-import useAppStore from '../store';
+import useAppStore, { DMAP_COMMITS_BASE } from '../store';
 import { BuildUnitsData, fetchBuildUnitsData } from '../dataProvider';
 import { Tooltip } from '@mui/material';
 import CenterCircularProgress from './CenterCircularProgress';
+import moment from 'moment';
 
 type DifferenceUnitData = {
     unit: string,
     difference: number,
-
-    // empty means it's in competitor
-    // NA means it's not in competitor
     inCompetitor: string
 }
 
 const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTimestamp : string, competitorTimestamp: string}) => {
-    const buildUnitsData = useAppStore((state) => state.buildUnitsData);
-    const trackerData = useAppStore((state) => state.trackerData);
-    const buildMetadatas = Object.values(useAppStore((state) => state.buildMetadatas));
-    const addBuildUnitsData = useAppStore((state) => state.addBuildUnitsData);
-
+    const { buildUnitsData, trackerData, buildMetadatas, addBuildUnitsData } = useAppStore();
     const [width, setWidth] = useState(window.innerWidth);
     const [selectCompetitor, setSelectCompetitor] = useState<string>(competitorTimestamp);
     const [differenceData, setDifferenceData] = useState<DifferenceUnitData[]>();
 
+    const processUnitsData = (data: BuildUnitsData[]): Map<string, number> => {
+        const unitMap = data.reduce((map, item) => {
+            const existingUnit = map.get(item.u) || { count: 0, totalTime: 0 };
+            map.set(item.u, {
+                count: existingUnit.count + 1,
+                totalTime: existingUnit.totalTime + item.t
+            });
+            return map;
+        }, new Map<string, { count: number, totalTime: number }>());
+
+        return new Map(Array.from(unitMap).map(([key, value]) => [
+            value.count > 1 ? `${value.count}x ${key}` : key,
+            value.totalTime
+        ]));
+    };
+
     useEffect(() => {
         const fetchUnits = async () => {
-            if (buildUnitsData[basisTimestamp] === undefined) {
+            if (!buildUnitsData[basisTimestamp]) {
                 const data = await fetchBuildUnitsData(basisTimestamp);
                 addBuildUnitsData(basisTimestamp, data);
             }
 
-            let baseUnitsMap = new Map<string, number>();
-            if (buildUnitsData[basisTimestamp]) {
-                const unitMap = new Map<string, { count: number, totalTime: number }>();
-                buildUnitsData[basisTimestamp].forEach(item => {
-                    const existingUnit = unitMap.get(item.u) || { count: 0, totalTime: 0 };
-                    unitMap.set(item.u, {
-                        count: existingUnit.count + 1,
-                        totalTime: existingUnit.totalTime + item.t
-                    });
-                });
-
-                const newBuildUnitsData: BuildUnitsData[] = Array.from(unitMap).map(([key, value]) => ({
-                    u: value.count > 1 ? `${value.count}x ${key}` : key,
-                    t: value.totalTime
-                }));
-
-                baseUnitsMap = new Map(newBuildUnitsData.map(item => [item.u, item.t]));
+            if (!buildUnitsData[selectCompetitor]) {
+                const data = await fetchBuildUnitsData(selectCompetitor);
+                addBuildUnitsData(selectCompetitor, data);
             }
 
-            let competitorUnitsMap = new Map<string, number>();
-            if (selectCompetitor){
-                let competitorUnitsData : BuildUnitsData[];
-                if (buildUnitsData[selectCompetitor] === undefined) {
-                    competitorUnitsData = await fetchBuildUnitsData(selectCompetitor);
-                    addBuildUnitsData(selectCompetitor, competitorUnitsData);
-                }else{
-                    competitorUnitsData = buildUnitsData[selectCompetitor];
-                }
-
-                if (competitorUnitsData) {
-                    const unitMap = competitorUnitsData.reduce((map, item) => {
-                        const existingUnit = map.get(item.u) || { count: 0, totalTime: 0 };
-                        map.set(item.u, {
-                            count: existingUnit.count + 1,
-                            totalTime: existingUnit.totalTime + item.t
-                        });
-                        return map;
-                    }, new Map<string, { count: number, totalTime: number }>());
-
-                    const newBuildUnitsData: BuildUnitsData[] = Array.from(unitMap).map(([key, value]) => ({
-                        u: value.count > 1 ? `${value.count}x ${key}` : key,
-                        t: value.totalTime
-                    }));
-
-                    competitorUnitsMap = new Map(newBuildUnitsData.map(item => [item.u, item.t]));
-                }
-            }
+            const baseUnitsMap = processUnitsData(buildUnitsData[basisTimestamp] || []);
+            const competitorUnitsMap = processUnitsData(buildUnitsData[selectCompetitor] || []);
 
             const compiledUnitsMap = new Map<string, { difference: number, inCompetitor: string }>();
             baseUnitsMap.forEach((value, key) => {
                 const competitorValue = competitorUnitsMap.get(key);
-                if (competitorValue){
-                    compiledUnitsMap.set(key, {
-                        difference: value - competitorValue,
-                        inCompetitor: ""
-                    });
-                }else{
-                    compiledUnitsMap.set(key, {
-                        difference: baseUnitsMap.get(key)!,
-                        inCompetitor: "NA"
-                    });
-                }
+                compiledUnitsMap.set(key, {
+                    difference: competitorValue ? value - competitorValue : value,
+                    inCompetitor: competitorValue ? "" : "NA"
+                });
             });
 
-            const differenceData = Array.from(compiledUnitsMap).map(([unit, data]) => ({
+            const newDifferenceData = Array.from(compiledUnitsMap).map(([unit, data]) => ({
                 unit,
                 difference: data.difference,
                 inCompetitor: data.inCompetitor
             }));
-            differenceData.sort((a, b) => a.difference - b.difference);
-            setDifferenceData(differenceData);
-        }
+            newDifferenceData.sort((a, b) => a.difference - b.difference);
+            setDifferenceData(newDifferenceData);
+        };
+
         fetchUnits();
         const handleResize = () => setWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, [selectCompetitor]);
 
-    return (buildUnitsData[basisTimestamp] && buildUnitsData[selectCompetitor])  ?
-            <>
+    const renderMetadata = (timestamp: string) => (
+        <>
+            <p>Total Build Time: <strong>{buildMetadatas[timestamp].t}s</strong></p>
+            <p>Rust Compiler Version: <strong>{buildMetadatas[timestamp].r}</strong></p>
+            <p>Number of Compilation Units: <strong>{buildMetadatas[timestamp].u}</strong></p>
+            <p>Compilation Date: <strong>{new Date(Number(buildMetadatas[timestamp].b) * 1000).toLocaleString("sv")} ({moment(Number(buildMetadatas[timestamp].b) * 1000).fromNow()})</strong></p>
+            <p>Commit Hash: <a href={`${DMAP_COMMITS_BASE}/${buildMetadatas[timestamp].h}`} target="_blank" style={{ cursor: 'pointer' }}>{buildMetadatas[timestamp].h}</a></p>
+        </>
+    );
+
+    if (!buildUnitsData[basisTimestamp] || !buildUnitsData[selectCompetitor]) {
+        return <CenterCircularProgress />;
+    }
+
+    return (
+        <>
             <div style={{ display: 'grid', gridTemplateColumns: '50% 50%', padding: '0px 0px 0px 24px' }}>
                 <div>
                     <h2>Base</h2>
-                    <p>Total Build Time: <strong>{buildMetadatas.find(b => b.bf === basisTimestamp)?.t}s</strong></p>
-                    <p>Rust Compiler Version: <strong>{buildMetadatas.find(b => b.bf === basisTimestamp)?.r}</strong></p>
-                    <p>Number of Compilation Units: <strong>{buildMetadatas.find(b => b.bf === basisTimestamp)?.u}</strong></p>
-                    <p>Compilation Date: <strong>{new Date(Number(buildMetadatas.find(b => b.bf === basisTimestamp)?.b) * 1000).toLocaleString()}</strong></p>
+                    {renderMetadata(basisTimestamp)}
                 </div>
                 <div style={{display:"flex", justifyContent: "space-between"}}>
                     <div>
                         <h2>Competitor</h2>
-                        <p>Total Build Time: <strong>{buildMetadatas.find(b => b.bf === selectCompetitor)?.t}s</strong></p>
-                        <p>Rust Compiler Version: <strong>{buildMetadatas.find(b => b.bf === selectCompetitor)?.r}</strong></p>
-                        <p>Number of Compilation Units: <strong>{buildMetadatas.find(b => b.bf === selectCompetitor)?.u}</strong></p>
-                        <p>Compilation Date: <strong>{new Date(Number(buildMetadatas.find(b => b.bf === selectCompetitor)?.b) * 1000).toLocaleString()}</strong></p>
+                        {renderMetadata(selectCompetitor)}
                     </div>
                     <div style={{alignSelf : "end", paddingBottom : "16px", paddingRight : "18px"}}>
                         <select
                             id="displaySelect"
-                            value={selectCompetitor!}
-                            onChange={(event) => setSelectCompetitor(String(event.target.value))}
+                            value={selectCompetitor}
+                            onChange={(event) => setSelectCompetitor(event.target.value)}
                             style={{
                                 padding: '5px',
                                 fontSize: '16px',
@@ -141,11 +113,11 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                                 marginRight: '8px'
                             }}
                         >
-                            {
-                                trackerData.filter(v => v !== basisTimestamp)
-                                .map((v) => {
-                                    return <option key={v} value={v}>{v}</option>
-                                })
+                            {trackerData
+                                .filter(v => v !== basisTimestamp)
+                                .map((v) => (
+                                    <option key={v} value={v}>{v}</option>
+                                ))
                             }
                         </select>
                     </div>
@@ -191,12 +163,13 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                   }}
               />
               <Bar isAnimationActive={false} dataKey={"difference"} minPointSize={1} barSize={32}>
-                  {differenceData?.slice().reverse().map((d, v) => {
-                    return <Cell key={`cell-${v}`} fill={d.difference > 0 ? "#82ca9d" : "#ff7f7f"} />;
-                  })}
+                  {differenceData?.slice().reverse().map((d, v) => (
+                    <Cell key={`cell-${v}`} fill={d.difference > 0 ? "#82ca9d" : "#ff7f7f"} />
+                  ))}
               </Bar>
             </BarChart>
-          </> : <CenterCircularProgress/>
+        </>
+    );
 }
 
 export default DiffBuildUnitsBarGraph;
