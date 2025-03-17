@@ -12,11 +12,16 @@ type DifferenceUnitData = {
     inCompetitor: string
 }
 
+enum SortSelect {
+    Negative = "negative",
+    Positive = "positive",
+}
+
 const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTimestamp : string, competitorTimestamp: string}) => {
     const { buildUnitsData, trackerData, buildMetadatas, addBuildUnitsData } = useAppStore();
     const [width, setWidth] = useState(window.innerWidth);
     const [selectCompetitor, setSelectCompetitor] = useState<string>(competitorTimestamp);
-    const [sortSelect, setSortSelect] = useState<string>("negative");
+    const [sortSelect, setSortSelect] = useState<SortSelect>(SortSelect.Negative);
     const [differenceData, setDifferenceData] = useState<DifferenceUnitData[]>();
 
     const processUnitsData = (data: BuildUnitsData[]): Map<string, number> => {
@@ -80,7 +85,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
         const handleResize = () => setWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [selectCompetitor, differenceData]);
+    }, [selectCompetitor]);
 
     const renderMetadata = (timestamp: string) => (
         <>
@@ -112,7 +117,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                         <select
                             id="sortSelect"
                             value={sortSelect}
-                            onChange={(event) => setSortSelect(event.target.value)}
+                            onChange={(event) => setSortSelect(event.target.value as SortSelect)}
                             style={{
                                 padding: '5px',
                                 fontSize: '16px',
@@ -124,6 +129,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                         >
                             <option value="negative">Negative delta first</option>
                             <option value="positive">Positive delta first</option>
+                            <option value="absolute">Largest delta first(absolute)</option>
                         </select>
                         <select
                             id="displaySelect"
@@ -151,6 +157,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                     </div>
                 </div>
             </div>
+
             <BarChart
               width={width}
               height={56 * buildUnitsData[basisTimestamp].length}
@@ -159,49 +166,10 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
               margin={{ right: 20, left: 160, bottom: 5 }}>
               <CartesianGrid vertical={false} />
               <XAxis hide axisLine={false} type="number" />
-              <YAxis yAxisId={0} orientation="left" dataKey={"unit"} type="category" axisLine={false}
-                      tick={(props) => {
-                          const { x, y, payload } = props;
-                          return (
-                              <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
-                                  <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
-                                      {payload.value.length > 25 ? (
-                                          <>
-                                              <tspan x={x} dy="-0.6">
-                                                  {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
-                                              </tspan>
-                                              <tspan x={x} dy="1.2em">
-                                                  {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
-                                              </tspan>
-                                          </>
-                                      ) : payload.value}
-                                  </text>
-                              </Tooltip>
-                          );
-                      }}
-              />
-              <YAxis yAxisId={1} orientation="right" dataKey={"difference"} type="category" axisLine={false} tickLine={false}
-                  tick={(props) => {
-                      const { x, y, payload } = props;
-                      return (
-                          <text x={x} y={y} dy={4} textAnchor="start" fill="#666" fontSize="16">
-                              {`${Number(payload.value).toFixed(1)}s`}
-                          </text>
-                      );
-                  }}
-              />
-              <YAxis yAxisId={2} orientation="right" dataKey={"inCompetitor"} type="category" axisLine={false} tickLine={false}
-                  tick={(props) => {
-                      const { x, y, payload } = props;
-                      return (
-                          <text x={x} y={y} dy={4} textAnchor="start" fill="#666" fontSize="16">
-                              {payload.value}
-                          </text>
-                      );
-                  }}
-              />
-              <Bar isAnimationActive={false} dataKey={"difference"} minPointSize={1} barSize={32}>
-                  {(sortSelect === "negative" ? differenceData : differenceData.slice().reverse()).map((d, v) => (
+              <YAxis yAxisId={0} orientation="left" dataKey={"unit"} type="category" axisLine={false} tick={YAxisLeftTick} />
+              <YAxis yAxisId={1} orientation="right" dataKey={"difference"} type="category" axisLine={false} tickLine={false} tick={YAxisRightTick} />
+              <Bar isAnimationActive={false} dataKey={"difference"} minPointSize={1} barSize={44}>
+                  {(sortSelect === SortSelect.Negative ? differenceData : differenceData.slice().reverse()).map((d, v) => (
                     <Cell key={`cell-${v}`} fill={d.difference > 0 ? "#82ca9d" : "#ff7f7f"} />
                   ))}
               </Bar>
@@ -209,5 +177,34 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
         </>
     );
 }
+
+const YAxisLeftTick = (props: { x: number; y: number; payload: { value: string } }) => {
+    const { x, y, payload } = props;
+    return (
+        <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
+            <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
+                {payload.value.length > 25 ? (
+                    <>
+                        <tspan x={x} dy="-0.6">
+                            {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
+                        </tspan>
+                        <tspan x={x} dy="1.2em">
+                            {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
+                        </tspan>
+                    </>
+                ) : payload.value}
+            </text>
+        </Tooltip>
+    );
+}
+
+const YAxisRightTick = (props: { x: number; y: number; payload: { value: string } }) => {
+    const { x, y, payload } = props;
+    return (
+        <text x={x} y={y} dy={4} textAnchor="start" fill="#666" fontSize="16">
+            {`${Number(payload.value).toFixed(1)}s`}
+        </text>
+    );
+};
 
 export default DiffBuildUnitsBarGraph;
