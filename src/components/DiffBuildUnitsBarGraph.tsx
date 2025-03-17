@@ -15,6 +15,7 @@ type DifferenceUnitData = {
 enum SortSelect {
     Negative = "negative",
     Positive = "positive",
+    Absolute = "absolute"
 }
 
 const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTimestamp : string, competitorTimestamp: string}) => {
@@ -42,6 +43,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
 
     useEffect(() => {
         const fetchUnits = async () => {
+            console.log("fetching units");
             let bData = buildUnitsData[basisTimestamp] || [];
             let cData = buildUnitsData[selectCompetitor] || [];
 
@@ -85,7 +87,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
         const handleResize = () => setWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [selectCompetitor]);
+    }, [selectCompetitor, addBuildUnitsData, basisTimestamp, buildUnitsData]);
 
     const renderMetadata = (timestamp: string) => (
         <>
@@ -100,6 +102,18 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
     if (!buildUnitsData[basisTimestamp] || !buildUnitsData[selectCompetitor] || !differenceData) {
         return <CenterCircularProgress />;
     }
+
+    const sorteDiffData = (() => {
+        switch (sortSelect) {
+            case SortSelect.Absolute:
+                return differenceData.slice().sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference));
+            case SortSelect.Positive:
+                return differenceData.slice().sort((a, b) => b.difference - a.difference);
+            case SortSelect.Negative:
+            default:
+                return differenceData;
+        }
+    })();
 
     return (
         <>
@@ -161,7 +175,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
             <BarChart
               width={width}
               height={56 * buildUnitsData[basisTimestamp].length}
-              data={sortSelect === "negative" ? differenceData : differenceData.slice().reverse()}
+              data={sorteDiffData}
               layout={"vertical"}
               margin={{ right: 20, left: 160, bottom: 5 }}>
               <CartesianGrid vertical={false} />
@@ -169,9 +183,11 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
               <YAxis yAxisId={0} orientation="left" dataKey={"unit"} type="category" axisLine={false} tick={YAxisLeftTick} />
               <YAxis yAxisId={1} orientation="right" dataKey={"difference"} type="category" axisLine={false} tickLine={false} tick={YAxisRightTick} />
               <Bar isAnimationActive={false} dataKey={"difference"} minPointSize={1} barSize={44}>
-                  {(sortSelect === SortSelect.Negative ? differenceData : differenceData.slice().reverse()).map((d, v) => (
-                    <Cell key={`cell-${v}`} fill={d.difference > 0 ? "#82ca9d" : "#ff7f7f"} />
-                  ))}
+              {
+                sorteDiffData.map((d, v) => (
+                  <Cell key={`cell-${v}`} fill={d.difference > 0 ? "#82ca9d" : "#ff7f7f"} />
+                ))
+              }
               </Bar>
             </BarChart>
         </>
