@@ -6,11 +6,39 @@ import { Tooltip } from '@mui/material';
 import CenterCircularProgress from './CenterCircularProgress';
 import moment from 'moment'
 
+const YAxisLeftTick = (props: { x: number; y: number; payload: { value: string } }) => {
+    const { x, y, payload } = props;
+    return (
+        <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
+            <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
+                {payload.value.length > 25 ? (
+                    <>
+                        <tspan x={x} dy="-0.6">
+                            {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
+                        </tspan>
+                        <tspan x={x} dy="1.2em">
+                            {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
+                        </tspan>
+                    </>
+                ) : payload.value}
+            </text>
+        </Tooltip>
+    );
+}
+
+const YAxisRightTick = (props: { x: number; y: number; payload: { value: string } }) => {
+    const { x, y, payload } = props;
+    return (
+        <text x={x} y={y} dy={4} textAnchor="start" fill="#666" fontSize="16">
+            {`${payload.value}s`}
+        </text>
+    );
+};
+
 const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
     const buildUnitsData = useAppStore((state) => state.buildUnitsData);
     const buildMetadatas = useAppStore((state) => state.buildMetadatas);
     const addBuildUnitsData = useAppStore((state) => state.addBuildUnitsData);
-
     const [width, setWidth] = useState(window.innerWidth);
 
     useEffect(() => {
@@ -41,38 +69,9 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
           <BarChart width={width} height={56 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 160, bottom: 5, }} >
             <CartesianGrid vertical={false} />
             <XAxis hide axisLine={false} type="number" />
-            <YAxis yAxisId={0} orientation="left" dataKey={"u"} type="category" axisLine={false}
-                    tick={(props) => {
-                        const { x, y, payload } = props;
-                        return (
-                            <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
-                                <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
-                                    {payload.value.length > 25 ? (
-                                        <>
-                                            <tspan x={x} dy="-0.6">
-                                                {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
-                                            </tspan>
-                                            <tspan x={x} dy="1.2em">
-                                                {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
-                                            </tspan>
-                                        </>
-                                    ) : payload.value}
-                                </text>
-                            </Tooltip>
-                        );
-                    }}
-            />
-            <YAxis yAxisId={1} orientation="right" dataKey={"t"} type="category" axisLine={false} tickLine={false}
-                tick={(props) => {
-                    const { x, y, payload } = props;
-                    return (
-                        <text x={x} y={y} dy={4} textAnchor="start" fill="#666" fontSize="16">
-                            {`${payload.value}s`}
-                        </text>
-                    );
-                }}
-            />
-            <Bar isAnimationActive={false} dataKey={"t"} minPointSize={2} barSize={32}>
+            <YAxis yAxisId={0} orientation="left" dataKey={"u"} type="category" axisLine={false} tick={YAxisLeftTick} />
+            <YAxis yAxisId={1} orientation="right" dataKey={"t"} type="category" axisLine={false} tickLine={false} tick={YAxisRightTick} />
+            <Bar isAnimationActive={false} dataKey={"t"} minPointSize={2} barSize={44}>
                 {buildUnitsData[timestamp].map((d, v) => {
                   return <Cell key={`cell-${v}`} fill="#82ca9d" />;
                 })}
