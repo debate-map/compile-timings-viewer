@@ -18,6 +18,35 @@ enum SortSelect {
     Absolute = "absolute"
 }
 
+const YAxisLeftTick = (props: { x: number; y: number; payload: { value: string } }) => {
+    const { x, y, payload } = props;
+    return (
+        <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
+            <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
+                {payload.value.length > 25 ? (
+                    <>
+                        <tspan x={x} dy="-0.6">
+                            {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
+                        </tspan>
+                        <tspan x={x} dy="1.2em">
+                            {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
+                        </tspan>
+                    </>
+                ) : payload.value}
+            </text>
+        </Tooltip>
+    );
+}
+
+const YAxisRightTick = (props: { x: number; y: number; payload: { value: string } }) => {
+    const { x, y, payload } = props;
+    return (
+        <text x={x} y={y} dy={4} textAnchor="start" fill="#666" fontSize="16">
+            {`${Number(payload.value).toFixed(1)}s`}
+        </text>
+    );
+};
+
 const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTimestamp : string, competitorTimestamp: string}) => {
     const { buildUnitsData, trackerData, buildMetadatas, addBuildUnitsData } = useAppStore();
     const [width, setWidth] = useState(window.innerWidth);
@@ -172,12 +201,7 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                 </div>
             </div>
 
-            <BarChart
-              width={width}
-              height={56 * buildUnitsData[basisTimestamp].length}
-              data={sorteDiffData}
-              layout={"vertical"}
-              margin={{ right: 20, left: 160, bottom: 5 }}>
+            <BarChart width={width} height={56 * buildUnitsData[basisTimestamp].length} data={sorteDiffData} layout={"vertical"} margin={{ right: 20, left: 160, bottom: 5 }}>
               <CartesianGrid vertical={false} />
               <XAxis hide axisLine={false} type="number" />
               <YAxis yAxisId={0} orientation="left" dataKey={"unit"} type="category" axisLine={false} tick={YAxisLeftTick} />
@@ -193,34 +217,5 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
         </>
     );
 }
-
-const YAxisLeftTick = (props: { x: number; y: number; payload: { value: string } }) => {
-    const { x, y, payload } = props;
-    return (
-        <Tooltip title={payload.value} placement="right" enterDelay={0} leaveDelay={0}>
-            <text x={x} y={y} dy={4} textAnchor="end" fill="#666" fontSize="16">
-                {payload.value.length > 25 ? (
-                    <>
-                        <tspan x={x} dy="-0.6">
-                            {payload.value.substring(0, payload.value.lastIndexOf(' ', 25))}
-                        </tspan>
-                        <tspan x={x} dy="1.2em">
-                            {payload.value.substring(payload.value.lastIndexOf(' ', 25) + 1)}
-                        </tspan>
-                    </>
-                ) : payload.value}
-            </text>
-        </Tooltip>
-    );
-}
-
-const YAxisRightTick = (props: { x: number; y: number; payload: { value: string } }) => {
-    const { x, y, payload } = props;
-    return (
-        <text x={x} y={y} dy={4} textAnchor="start" fill="#666" fontSize="16">
-            {`${Number(payload.value).toFixed(1)}s`}
-        </text>
-    );
-};
 
 export default DiffBuildUnitsBarGraph;
