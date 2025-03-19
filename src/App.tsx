@@ -28,9 +28,7 @@ const App = () => {
 
     return (
     <>
-        <div style={{ height: '96vh', width: '99vw' }}>
-          <MetadataBarGraph />
-        </div>
+        <MetadataBarGraph />
         <Snackbar open={snackbarOpen} autoHideDuration={4000} onClose={handleSnackbarClose}>
             <Alert severity="error" onClose={handleSnackbarClose}>
                {`Error fetching data, try to refresh the page.`}

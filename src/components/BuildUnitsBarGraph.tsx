@@ -51,7 +51,9 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
         const handleResize = () => setWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    }, [timestamp]);
+    // since the component is memoized, this effect will only run when timestamp changes
+    // usually for memoized components, it should re render on props change
 
     return (
         buildUnitsData[timestamp] ?
