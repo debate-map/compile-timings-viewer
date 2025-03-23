@@ -35,10 +35,23 @@ const YAxisRightTick = (props: { x: number; y: number; payload: { value: string 
     );
 };
 
+const BuildUnitsMetadata = ({timestamp} : {timestamp: string}) => {
+    const buildMetadatas = useAppStore(state => state.buildMetadatas);
+    return <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 0px 0px 24px' }}>
+        <div>
+            <p>Total Build Time: <strong>{buildMetadatas[timestamp].t}s</strong></p>
+            <p>Rust Compiler Version: <strong>{buildMetadatas[timestamp].r}</strong></p>
+            <p>Number of Compilation Units: <strong>{buildMetadatas[timestamp].u}</strong></p>
+            <p>Compilation Date: <strong>{new Date(Number(buildMetadatas[timestamp].b) * 1000).toLocaleString("sv")} ({moment(Number(buildMetadatas[timestamp].b) * 1000).fromNow()})</strong></p>
+            <p>Commit Hash: <a href={`${DMAP_COMMITS_BASE}/${buildMetadatas[timestamp].h}`} target="_blank" style={{ cursor: 'pointer' }}>{buildMetadatas[timestamp].h}</a></p>
+        </div>
+
+    </div>
+}
+
 const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
-    const buildUnitsData = useAppStore((state) => state.buildUnitsData);
-    const buildMetadatas = useAppStore((state) => state.buildMetadatas);
-    const addBuildUnitsData = useAppStore((state) => state.addBuildUnitsData);
+    const buildUnitsData = useAppStore(state => state.buildUnitsData);
+    const addBuildUnitsData = useAppStore(state => state.addBuildUnitsData);
     const [width, setWidth] = useState(window.innerWidth);
 
     useEffect(() => {
@@ -51,34 +64,23 @@ const BuildUnitsBarGraph = ({timestamp}: {timestamp : string}) => {
         const handleResize = () => setWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [timestamp]);
-    // since the component is memoized, this effect will only run when timestamp changes
-    // usually for memoized components, it should re render on props change
+    }, [timestamp, buildUnitsData, addBuildUnitsData]);
 
     return (
         buildUnitsData[timestamp] ?
-            <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0px 0px 0px 24px' }}>
-                    <div>
-                        <p>Total Build Time: <strong>{buildMetadatas[timestamp].t}s</strong></p>
-                        <p>Rust Compiler Version: <strong>{buildMetadatas[timestamp].r}</strong></p>
-                        <p>Number of Compilation Units: <strong>{buildMetadatas[timestamp].u}</strong></p>
-                        <p>Compilation Date: <strong>{new Date(Number(buildMetadatas[timestamp].b) * 1000).toLocaleString("sv")} ({moment(Number(buildMetadatas[timestamp].b) * 1000).fromNow()})</strong></p>
-                        <p>Commit Hash: <a href={`${DMAP_COMMITS_BASE}/${buildMetadatas[timestamp].h}`} target="_blank" style={{ cursor: 'pointer' }}>{buildMetadatas[timestamp].h}</a></p>
-                    </div>
-
-                </div>
-          <BarChart width={width} height={56 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 160, bottom: 5, }} >
-            <CartesianGrid vertical={false} />
-            <XAxis hide axisLine={false} type="number" />
-            <YAxis yAxisId={0} orientation="left" dataKey={"u"} type="category" axisLine={false} tick={YAxisLeftTick} />
-            <YAxis yAxisId={1} orientation="right" dataKey={"t"} type="category" axisLine={false} tickLine={false} tick={YAxisRightTick} />
-            <Bar isAnimationActive={false} dataKey={"t"} minPointSize={2} barSize={44}>
-                {buildUnitsData[timestamp].map((d, v) => {
-                  return <Cell key={`cell-${v}`} fill="#82ca9d" />;
-                })}
-            </Bar>
-          </BarChart>
+          <>
+            <BuildUnitsMetadata timestamp={timestamp}/>
+            <BarChart width={width} height={56 * buildUnitsData[timestamp].length} data={buildUnitsData[timestamp]} layout={"vertical"} margin={{  right: 20, left: 160, bottom: 5, }} >
+              <CartesianGrid vertical={false} />
+              <XAxis hide axisLine={false} type="number" />
+              <YAxis yAxisId={0} orientation="left" dataKey={"u"} type="category" axisLine={false} tick={YAxisLeftTick} />
+              <YAxis yAxisId={1} orientation="right" dataKey={"t"} type="category" axisLine={false} tickLine={false} tick={YAxisRightTick} />
+              <Bar isAnimationActive={false} dataKey={"t"} minPointSize={2} barSize={44}>
+                  {buildUnitsData[timestamp].map((_, v) => {
+                    return <Cell key={`cell-${v}`} fill="#82ca9d" />;
+                  })}
+              </Bar>
+            </BarChart>
           </> : <CenterCircularProgress/>
 
     );

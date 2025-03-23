@@ -47,10 +47,21 @@ const YAxisRightTick = (props: { x: number; y: number; payload: { value: string 
     );
 };
 
-const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTimestamp : string, competitorTimestamp: string}) => {
-    const { buildUnitsData, trackerData, buildMetadatas, addBuildUnitsData } = useAppStore();
+const DiffBuildMetadata = ({timestamp} : {timestamp: string}) => {
+    const buildMetadatas = useAppStore(state => state.buildMetadatas);
+    return <>
+        <p>Total Build Time: <strong>{buildMetadatas[timestamp].t}s</strong></p>
+        <p>Rust Compiler Version: <strong>{buildMetadatas[timestamp].r}</strong></p>
+        <p>Number of Compilation Units: <strong>{buildMetadatas[timestamp].u}</strong></p>
+        <p>Compilation Date: <strong>{new Date(Number(buildMetadatas[timestamp].b) * 1000).toLocaleString("sv")} ({moment(Number(buildMetadatas[timestamp].b) * 1000).fromNow()})</strong></p>
+        <p>Commit Hash: <a href={`${DMAP_COMMITS_BASE}/${buildMetadatas[timestamp].h}`} target="_blank" style={{ cursor: 'pointer' }}>{buildMetadatas[timestamp].h}</a></p>
+    </>
+}
+
+const DiffBuildUnitsBarGraph = ({basisTs, competitorTs}: {basisTs : string, competitorTs: string}) => {
+    const buildUnitsData = useAppStore(state => state.buildUnitsData);
+    const addBuildUnitsData = useAppStore(state => state.addBuildUnitsData);
     const [width, setWidth] = useState(window.innerWidth);
-    const [selectCompetitor, setSelectCompetitor] = useState<string>(competitorTimestamp);
     const [sortSelect, setSortSelect] = useState<SortSelect>(SortSelect.Negative);
     const [differenceData, setDifferenceData] = useState<DifferenceUnitData[]>();
 
@@ -73,17 +84,17 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
     useEffect(() => {
         const fetchUnits = async () => {
             console.log("fetching units");
-            let bData = buildUnitsData[basisTimestamp] || [];
-            let cData = buildUnitsData[selectCompetitor] || [];
+            let bData = buildUnitsData[basisTs] || [];
+            let cData = buildUnitsData[competitorTs] || [];
 
             if (bData.length === 0) {
-                bData = await fetchBuildUnitsData(basisTimestamp);
-                addBuildUnitsData(basisTimestamp, bData);
+                bData = await fetchBuildUnitsData(basisTs);
+                addBuildUnitsData(basisTs, bData);
             }
 
             if (cData.length === 0) {
-                cData = await fetchBuildUnitsData(selectCompetitor);
-                addBuildUnitsData(selectCompetitor, cData);
+                cData = await fetchBuildUnitsData(competitorTs);
+                addBuildUnitsData(competitorTs, cData);
             }
 
             const baseUnitsMap = processUnitsData(bData);
@@ -116,19 +127,9 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
         const handleResize = () => setWidth(window.innerWidth);
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [selectCompetitor, addBuildUnitsData, basisTimestamp, buildUnitsData]);
+    }, [basisTs, competitorTs, addBuildUnitsData, buildUnitsData]);
 
-    const renderMetadata = (timestamp: string) => (
-        <>
-            <p>Total Build Time: <strong>{buildMetadatas[timestamp].t}s</strong></p>
-            <p>Rust Compiler Version: <strong>{buildMetadatas[timestamp].r}</strong></p>
-            <p>Number of Compilation Units: <strong>{buildMetadatas[timestamp].u}</strong></p>
-            <p>Compilation Date: <strong>{new Date(Number(buildMetadatas[timestamp].b) * 1000).toLocaleString("sv")} ({moment(Number(buildMetadatas[timestamp].b) * 1000).fromNow()})</strong></p>
-            <p>Commit Hash: <a href={`${DMAP_COMMITS_BASE}/${buildMetadatas[timestamp].h}`} target="_blank" style={{ cursor: 'pointer' }}>{buildMetadatas[timestamp].h}</a></p>
-        </>
-    );
-
-    if (!buildUnitsData[basisTimestamp] || !buildUnitsData[selectCompetitor] || !differenceData) {
+    if (!buildUnitsData[basisTs] || !buildUnitsData[competitorTs] || !differenceData) {
         return <CenterCircularProgress />;
     }
 
@@ -149,12 +150,12 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
             <div style={{ display: 'grid', gridTemplateColumns: '50% 50%', padding: '0px 0px 0px 24px' }}>
                 <div>
                     <h2>Base</h2>
-                    {renderMetadata(basisTimestamp)}
+                    <DiffBuildMetadata timestamp={basisTs}/>
                 </div>
                 <div style={{display: "flex",flexDirection:"column" }}>
                     <div>
                         <h2>Competitor</h2>
-                        {renderMetadata(selectCompetitor)}
+                        <DiffBuildMetadata timestamp={competitorTs}/>
                     </div>
                     <div style={{alignSelf : "end", paddingBottom : "16px", paddingRight : "18px"}}>
                         <select
@@ -174,34 +175,11 @@ const DiffBuildUnitsBarGraph = ({basisTimestamp, competitorTimestamp}: {basisTim
                             <option value="positive">Positive delta first</option>
                             <option value="absolute">Largest delta first(absolute)</option>
                         </select>
-                        <select
-                            id="displaySelect"
-                            value={selectCompetitor}
-                            onChange={(event) => setSelectCompetitor(event.target.value)}
-                            style={{
-                                padding: '5px',
-                                fontSize: '16px',
-                                border: '1px solid #ccc',
-                                borderRadius: '4px',
-                                backgroundColor: '#fff',
-                                marginRight: '8px'
-                            }}
-                        >
-                            {trackerData
-                                .filter(v => v !== basisTimestamp)
-                                .reverse()
-                                .map((v) => (
-                                    <option key={v} value={v}>
-                                        {new Date(Number(buildMetadatas[v].b) * 1000).toLocaleString("sv")} ({moment(buildMetadatas[v].b * 1000).fromNow()}) ({buildMetadatas[v].h})
-                                    </option>
-                                ))
-                            }
-                        </select>
                     </div>
                 </div>
             </div>
 
-            <BarChart width={width} height={56 * buildUnitsData[basisTimestamp].length} data={sorteDiffData} layout={"vertical"} margin={{ right: 20, left: 160, bottom: 5 }}>
+            <BarChart width={width} height={56 * buildUnitsData[basisTs].length} data={sorteDiffData} layout={"vertical"} margin={{ right: 20, left: 160, bottom: 5 }}>
               <CartesianGrid vertical={false} />
               <XAxis hide axisLine={false} type="number" />
               <YAxis yAxisId={0} orientation="left" dataKey={"unit"} type="category" axisLine={false} tick={YAxisLeftTick} />

@@ -20,7 +20,7 @@ const App = () => {
             }
         };
         fetchData();
-    }, []);
+    });
 
     const handleSnackbarClose = () => {
         setSnackbarOpen(false);
