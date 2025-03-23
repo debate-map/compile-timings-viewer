@@ -188,10 +188,6 @@ const MetadataBarGraph = () => {
         }
     };
 
-    const handleContextMenuClose = () => {
-        setContextMenu(null);
-    };
-
     const handleResetSplit = () => {
         setSplitRatio(0.7);
         displayTopRegion(true);
@@ -213,7 +209,7 @@ const MetadataBarGraph = () => {
         buildMds.length === 0 ? <CenterCircularProgress /> :
       <>
       <CacheRefreshButton />
-      <div style={{height:'98vh', overflowY:"clip"}} onContextMenu={handleContextMenu}>
+      <div style={{height:'98.8vh', overflowY:"clip"}} onContextMenu={handleContextMenu}>
             {contextMenu && (
                 <Menu
                     id="positioned-menu"
@@ -221,7 +217,7 @@ const MetadataBarGraph = () => {
                     anchorReference="anchorPosition"
                     anchorPosition={contextMenu ? { top: contextMenu.y, left: contextMenu.x } : undefined}
                     open={Boolean(contextMenu)}
-                    onClose={handleContextMenuClose}
+                    onClose={() => setContextMenu(null)}
                     anchorOrigin={{
                         vertical: 'top',
                         horizontal: 'left',
@@ -297,6 +293,8 @@ const MetadataBarGraph = () => {
                                     return <MemoizedDiffBuildUnitsBarGraph basisTs={a} competitorTs={b} />;
                                 } else if (a && b && (a === b)) {
                                     return <RawData timestamp={a} hash={buildMds[buildMds.findIndex(m => m.bf === b)].h} />;
+                                }else if(!a && b){
+                                    return <NoCompilationUnitSelected />
                                 }
 
                             })()}
