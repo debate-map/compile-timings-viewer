@@ -146,20 +146,17 @@ const ResizeBar = () => {
     };
 
     return (
-        <div
-            style={{
-                width: "100%",
-                height: "8px",
-                cursor: "ns-resize",
-                backgroundColor: "#ddd",
-                borderTop: "1px solid #aaa",
-                borderBottom: "1px solid #aaa",
-                userSelect: "none",
-            }}
-            onMouseDown={handleMouseDown}
-        />
+        <div style={{ width: "100%", height: "8px", cursor: "ns-resize", backgroundColor: "#ddd", borderTop: "1px solid #aaa", borderBottom: "1px solid #aaa", userSelect: "none", }} onMouseDown={handleMouseDown} />
     );
 };
+
+const NoCompilationUnitSelected = () => {
+    return (
+        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', fontSize: '24px', textAlign: 'center' }}>
+            No compilation unit selected from the bar graph
+        </div>
+    );
+}
 
 const MetadataBarGraph = () => {
     const cboxTS = useAppStore(state => state.cboxTS);
@@ -304,18 +301,7 @@ const MetadataBarGraph = () => {
 
                             })()}
                         </div>
-                    ) : (
-                        <div style={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            fontSize: '24px',
-                            textAlign: 'center'
-                        }}>
-                            No compilation unit selected from the bar graph
-                        </div>
-                    )}
+                    ) : (<NoCompilationUnitSelected />)}
                 </div>
             </div>
         }
